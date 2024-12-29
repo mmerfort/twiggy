@@ -110,6 +110,10 @@ fn stringify_mixu(pieces: &[Emoji], positions: &[usize], banner: &str) -> String
 }
 
 async fn retrieve_mixu_emojis(ctx: Context<'_>) -> Result<Vec<Emoji>> {
+    let emote_prefix = match ctx.data().configuration.get("mixuprefix") {
+        Some(prefix) => prefix,
+        None => "mixu",
+    };
     let guild = ctx
         .guild_id()
         .expect("Expected Mixu commands to be guild only");
@@ -119,8 +123,8 @@ async fn retrieve_mixu_emojis(ctx: Context<'_>) -> Result<Vec<Emoji>> {
     for i in 1..=16 {
         let piece = emojis
             .iter()
-            .find(|emoji| emoji.name == format!("miku{i}"))
-            .ok_or_else(|| anyhow::anyhow!("Could not find miku piece {i}"))?;
+            .find(|emoji| emoji.name == format!("{emote_prefix}{i}"))
+            .ok_or_else(|| anyhow::anyhow!("Could not find miku piece {emote_prefix}{i}"))?;
         miku_emoji_ids.push(piece.clone());
     }
 

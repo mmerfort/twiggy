@@ -26,9 +26,15 @@ const TIMEOUT_DURATION: Duration = Duration::from_secs(10 * 60);
 
 static IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
+#[poise::command(slash_command, guild_only, subcommands("challenge", "stats"))]
+pub async fn duel(_: DiscordContext<'_>) -> Result<()> {
+    // Do nothing because this is just for subcommands
+    Ok(())
+}
+
 /// Challenge the chat to a duel
 #[poise::command(slash_command, guild_only)]
-pub async fn duel(ctx: DiscordContext<'_>) -> Result<()> {
+pub async fn challenge(ctx: DiscordContext<'_>) -> Result<()> {
     let challenger = DuelUser::from(ctx, ctx.author()).await;
 
     if IN_PROGRESS.load(AtomicOrdering::Acquire) {
@@ -161,7 +167,11 @@ async fn find_opponent(
 
 /// Display your duel statistics
 #[poise::command(slash_command)]
-pub async fn duelstats(ctx: DiscordContext<'_>) -> Result<()> {
+pub async fn stats(
+    ctx: DiscordContext<'_>,
+    #[description = "Silent"] silent: Option<bool>,
+) -> Result<()> {
+    // let silent_output = silent.unwrap_or_else(|| true);
     let user = ctx.author();
     let conn = &mut ctx.data().database.acquire().await?;
 
@@ -187,6 +197,9 @@ pub async fn duelstats(ctx: DiscordContext<'_>) -> Result<()> {
             .icon_url(avatar_url(user)),
         );
 
+    if silent.unwrap_or(true) {
+        ctx.defer_ephemeral().await?;
+    }
     ctx.send(CreateReply::default().embed(embed)).await?;
 
     Ok(())

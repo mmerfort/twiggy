@@ -6,6 +6,7 @@ use std::num::NonZeroUsize;
 use std::sync::OnceLock;
 
 use anyhow::Result;
+use config::Config;
 use commands::*;
 use common::{response, text_message};
 use lru::LruCache;
@@ -17,6 +18,7 @@ pub struct Data {
     database: sqlx::SqlitePool,
     rpg_summary_cache: Mutex<LruCache<u64, String>>,
     simple_commands: RwLock<SimpleCommands>,
+    configuration: HashMap<String, String>,
 }
 pub type Context<'a> = poise::Context<'a, Data, anyhow::Error>;
 pub type Error = anyhow::Error;
@@ -26,6 +28,13 @@ pub static DEFAULT_COMMANDS: OnceLock<Vec<String>> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {
+    let settings = Config::builder()
+        .set_default("mixuPrefix", "miku").unwrap()
+        .add_source(config::File::with_name("config"))
+        .add_source(config::Environment::with_prefix("APP"))
+        .build()
+        .unwrap();
+    let configuration = settings.try_deserialize::<HashMap<String, String>>().unwrap();
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
     let intents =
         serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT;
@@ -52,15 +61,17 @@ async fn main() {
         commands(),
         dino(),
         duel(),
-        duelstats(),
         eightball(),
+        fball(),
         mikustare(),
         mixu(),
         quote(),
+        quwuote(),
         rpg(),
         rps(),
         sudoku(),
         uncolor(),
+        uwu(),
     ];
 
     // Initialize default commands
@@ -89,6 +100,7 @@ async fn main() {
         database,
         rpg_summary_cache: Mutex::new(LruCache::new(NonZeroUsize::new(10).unwrap())),
         simple_commands: RwLock::default(),
+        configuration,
     };
     let framework = poise::Framework::builder()
         .options(options)
